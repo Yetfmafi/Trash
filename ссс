@@ -1,0 +1,83 @@
+local Library = loadstring(game:HttpGet('https://raw.githubusercontent.com/Rain-Design/Libraries/main/Shaman/Library.lua'))()
+local Flags = Library.Flags
+
+local Window = Library:Window({
+    Text = "❄ Heroes Battlegrounds || AFK Farm"
+})
+
+local Tab = Window:Tab({
+    Text = "Main"
+})
+
+-- Подраздел для функционала телепорта и взаимодействия с ProximityPrompt
+local MiscSection = Tab:Section({
+    Text = "Farm Gifts"
+})
+
+-- Функционал телепорта и взаимодействия с объектом
+local targetName = "tchowtchow"
+
+-- Получение персонажа игрока
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Функция для поиска объекта и его части
+local function findTarget()
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == targetName then
+            local rootPart = obj:FindFirstChild("Root")
+            local prompt = obj:FindFirstChild("ProximityPrompt", true) -- Ищем ProximityPrompt внутри модели
+            if rootPart and prompt then
+                return rootPart.Position, prompt
+            end
+        end
+    end
+    return nil, nil
+end
+
+-- Функция для телепортации персонажа
+local function Teleport(pos)
+    if character and character:FindFirstChild("Humanoid") then
+        character:MoveTo(pos)
+    end
+end
+
+-- Функция для взаимодействия с ProximityPrompt
+local function interactWithPrompt(prompt)
+    if prompt and prompt:IsA("ProximityPrompt") then
+        fireproximityprompt(prompt) -- Активация ProximityPrompt
+    end
+end
+
+-- Переменная для контроля работы цикла
+local running = false
+
+-- Создание переключателя для включения/выключения функционала
+MiscSection:Toggle({
+    Text = "Teleport & Interact",
+    Default = false,
+    Tooltip = "Включает/выключает функционал телепорта и взаимодействия с ProximityPrompt.",
+    Callback = function(enabled)
+        if enabled and not running then
+            -- Включить функционал (начинаем цикл)
+            running = true
+            task.spawn(function()
+                while running do
+                    local targetPos, proximityPrompt = findTarget()
+                    if targetPos and proximityPrompt then
+                        Teleport(targetPos) -- Телепортируемся к цели
+                        task.wait(1) -- Ждем немного для безопасного прибытия
+                        interactWithPrompt(proximityPrompt) -- Взаимодействуем с ProximityPrompt
+                    else
+                        print("Цель или ProximityPrompt не найдены!")
+                    end
+                    task.wait(1) -- Ждем немного перед следующей итерацией
+                end
+            end)
+        elseif not enabled and running then
+            -- Выключить функционал (остановить цикл)
+            running = false
+            print("Функционал выключен.")
+        end
+    end
+})
